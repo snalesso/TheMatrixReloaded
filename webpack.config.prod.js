@@ -56,7 +56,7 @@ module.exports = {
             filename: "index.html",
             inject: "body",
             templateParameters: {
-                titlePrefix: "Dev - "
+                titlePrefix: null
             },
             options: {
                 title: "The Matrix reloaded"

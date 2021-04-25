@@ -18,8 +18,7 @@ class Config {
     private _fpsDelta_ms: number = Config.calculateDeltasFps(Config.defaultFps);
     get fpsDelta_ms() { return this._fpsDelta_ms; }
     getFpsDelta_ms() { return 1000 / this._fps; }
-    // TODO: verify if alpha is accepted
-    backgroundColor: Color_RGBA = Colors_RGBA.black;
+    backgroundColor: Color_RGBA = new Color_RGBA(0, 0, 0, 255);
     fontOptions: FontOptions = FontOptions.Default;
     // useRainbow: boolean = false;
     // rainbowSpeed: number = 0.75;
@@ -108,23 +107,7 @@ function fadeFrameByPerc(percent: number) {
     imgData = alterAlphaByAbs(imgData, 255 * percent);
     renderer2DCtx.putImageData(imgData, 0, 0);
 }
-// TODO: off screen canvas
-let prevFrameData: ImageData | null = null;
-// function getPreviousFrame(): Uint8ClampedArray {
-
-// }
-function fadeFrameByPerc_faster1(percent: number) {
-
-    prevFrameData = prevFrameData
-        ? prevFrameData
-        : renderer2DCtx.getImageData(0, 0, renderer2DCtx.canvas.width, renderer2DCtx.canvas.height);
-    // TODO: cache value
-    prevFrameData = alterAlphaByAbs(prevFrameData, 255 * percent);
-    renderer2DCtx.putImageData(prevFrameData, 0, 0);
-}
-// function fadeFrameByPerc_faster2(percent: number) {
-
-// }
+let prevFrameImageData: ImageData | null = null;
 function alterAlphaByAbs(imagedata: ImageData, alphaChange: number) {
 
     let i = imagedata.data.length - 1;
@@ -157,7 +140,6 @@ function forText<T>(func: () => T, options: FontOptions = config.fontOptions) {
 
     return r;
 }
-// TODO: remove pick FontOption, top caller will use .with
 function printText(text: string, area: Omit<RelativeArea, "size"> & Partial<Pick<RelativeArea, "size">>, fontOptions: FontOptions = config.fontOptions) {
     forText(
         () => {
@@ -203,6 +185,7 @@ function drawMatrix(time: number) {
 
         if (updateDrops(timeD)) {
             // TODO: cache value
+            // fadeFrameByPerc(-1 / (config.trailLength + 1));
             fadeFrameByPerc(-1 / (config.trailLength + 1));
             drawDrops();
         }

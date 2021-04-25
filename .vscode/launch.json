@@ -8,7 +8,15 @@
             "type": "pwa-msedge",
             "request": "launch",
             "name": "Open index.html",
-            "file": "${workspaceFolder}\\dist\\index.html"
+            "file": "${workspaceFolder}\\dist\\index.html",
+            "preLaunchTask": "npm: build:dev"
+        },
+        {
+            "type": "pwa-msedge",
+            "request": "launch",
+            "name": "Open index.html",
+            "file": "${workspaceFolder}\\dist\\index.html",
+            "preLaunchTask": "npm: build:dev"
         }
     ]
 }
