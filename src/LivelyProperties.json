@@ -1,0 +1,56 @@
+{
+  "backgroundColor": {
+    "text": "Background Color",
+    "type": "color",
+    "value": "#000000"
+  },
+  "fontColor": {
+    "text": "Font Color",
+    "type": "color",
+    "value": "#FFF0F0"
+  },
+  "fontFamily": {
+    "type": "dropdown",
+    "value": 0,
+    "items": [
+      "Monospace",
+      "Courier",
+      "Courier New",
+      "Consolas",
+      "Monaco"
+    ],
+    "text": "Font"
+  },
+  "fontLineHeight_px": {
+    "type": "slider",
+    "value": 15,
+    "min": 8,
+    "max": 48,
+    "text": "Font Size",
+    "tick": 1
+  },
+  "fps": {
+    "type": "slider",
+    "value": 60,
+    "min": 8,
+    "max": 60,
+    "text": "FPS",
+    "tick": 1
+  },
+  "cps": {
+    "type": "slider",
+    "value": 12,
+    "min": 1,
+    "max": 50,
+    "text": "CPS",
+    "tick": 1
+  },
+  "trailLength": {
+    "type": "slider",
+    "value": 32,
+    "min": 3,
+    "max": 120,
+    "text": "Trail length",
+    "tick": 1
+  }
+}
