@@ -19,7 +19,7 @@
     "build:prod": "webpack --config webpack.config.prod.js",
     "watch": "webpack --watch --config webpack.config.prod.js",
     "start": "webpack serve --open --config webpack.config.prod.js",
-    "pack": "powershell.exe Compress-Archive \"dist/*\" \"dist/dist.zip\" -CompressionLevel Optimal;",
+    "pack": "powershell.exe Compress-Archive \"dist/*\" \"dist/TheMatrixReloaded.zip\" -CompressionLevel Optimal;",
     "pack:prod": "npm run clear & npm run build:prod & npm run pack"
   },
   "keywords": [],
