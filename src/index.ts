@@ -1,6 +1,12 @@
-import { Color_RGBA, Colors_RGBA, ColorString, Colors_RGB } from './colors';
-import { getRandomItem, RelativeArea } from './core';
-import { Chars, fontFamilies, FontOptions } from './text';
+///<reference path="./core.ts" />
+///<reference path="./text.ts" />
+///<reference path="./colors.ts" />
+// import { ColorString, Colors_RGB, Color_RGBA } from './colors';
+// import { getRandomItem, RelativeArea } from './core';
+// import { Chars, fontFamilies, FontOptions } from './text';
+
+type FontSettingKey = `font${Capitalize<keyof FontOptions>}`;
+type SettingKey = keyof Config | FontSettingKey;
 
 // TODO: make immutable
 class Config {
@@ -17,7 +23,7 @@ class Config {
     public set fps(value) { this._fpsDelta_ms = Config.calculateDeltasFps(this._fps = value); }
     private _fpsDelta_ms: number = Config.calculateDeltasFps(Config.defaultFps);
     get fpsDelta_ms() { return this._fpsDelta_ms; }
-    getFpsDelta_ms() { return 1000 / this._fps; }
+    getFpsDelta_ms = () => { return 1000 / this._fps; }
     backgroundColor: Color_RGBA = new Color_RGBA(0, 0, 0, 255);
     fontOptions: FontOptions = FontOptions.Default;
     // useRainbow: boolean = false;
@@ -25,61 +31,65 @@ class Config {
 
     private static calculateDeltasFps(fps: number): number { return 1000 / fps; }
 }
-function livelyPropertyListener(name: keyof Config | `font${Capitalize<keyof FontOptions>}`, val: any) {
+function livelyPropertyListener(propName: SettingKey, value: any) {
 
-    switch (name) {
+    switch (propName) {
 
         case "backgroundColor":
-            const newBg = ColorString.parseRgba(val);
-            if (newBg)
-                config.backgroundColor = newBg;
+            const newBackground = parseHexColorString(value);
+            if (newBackground) {
+                config.backgroundColor = newBackground instanceof Color_RGBA ? newBackground : rgbToRgba(newBackground);
+                restartAnimation('canvas');
+            }
             break;
 
         case "fontColor":
-            const newFontColor = ColorString.parse(val);
+            const newFontColor = parseHexColorString(value);
             if (newFontColor)
                 config.fontOptions = config.fontOptions.with({ color: newFontColor });
             break;
 
         case "fontFamily":
-            val = parseInt(val);
-            if (isNaN(val) || val <= 0)
+            value = parseInt(value);
+            if (isNaN(value) || value <= 0)
                 return;
 
-            restartAnimation("matrix", () => config.fontOptions = config.fontOptions.with({ family: fontFamilies[val] }));
+            restartAnimation("matrix", () => config.fontOptions = config.fontOptions.with({ family: FontOptions.FontFamilies[value] }));
             break;
 
         case "fontLineHeight_px":
-            val = parseInt(val);
-            if (isNaN(val) || val <= 0)
+            value = parseInt(value);
+            if (isNaN(value) || value <= 0)
                 return;
 
-            restartAnimation("matrix", () => config.fontOptions = config.fontOptions.with({ lineHeight_px: val }));
+            restartAnimation("matrix", () => {
+                config.fontOptions = config.fontOptions.with({ lineHeight_px: value });
+            });
             break;
 
         case "trailLength":
-            val = parseInt(val);
-            // TODO: if value is ok should be decided by logic o target property, not externally, move to config.setTrailLength (same for other props)
-            if (isNaN(val) || val <= 0)
+            value = parseInt(value);
+            // TODO: find a better place for these validations
+            if (isNaN(value) || value <= 0)
                 return;
 
-            restartAnimation("matrix", () => config.trailLength = val);
+            restartAnimation("matrix", () => config.trailLength = value);
             break;
 
         case "fps":
-            val = parseInt(val);
-            if (isNaN(val) || val <= 0)
+            value = parseInt(value);
+            if (isNaN(value) || value <= 0)
                 return;
 
-            restartAnimation("none", () => config.fps = val);
+            restartAnimation("none", () => config.fps = value);
             break;
 
         case "cps":
-            val = parseInt(val);
-            if (isNaN(val) || val <= 0)
+            value = parseInt(value);
+            if (isNaN(value) || value <= 0)
                 return;
 
-            restartAnimation("none", () => config.cps = val);
+            restartAnimation("none", () => config.cps = value);
             break;
 
         // case "useRainbow":
@@ -95,7 +105,7 @@ function livelyPropertyListener(name: keyof Config | `font${Capitalize<keyof Fon
         //     break;
 
         default:
-            alert("Unhandled property: " + name);
+            alert("Unhandled property: " + propName);
     }
 }
 function clearCanvas() {
@@ -108,22 +118,17 @@ function fadeFrameByPerc(percent: number) {
     renderer2DCtx.putImageData(imgData, 0, 0);
 }
 let prevFrameImageData: ImageData | null = null;
-function alterAlphaByAbs(imagedata: ImageData, alphaChange: number) {
+function alterAlphaByAbs(img: ImageData, alphaChange: number) {
 
-    let i = imagedata.data.length - 1;
-    // for (let i = 0; i < len; i += 4) {
-    //     // TODO: optimize
-    //     // TODO: test with updating only needed cells
-    //     imagedata.data[i + 3] = Math.min(255, Math.max(0, imagedata.data[i + 3] + alphaChange));
-    // }
+    let i = img.data.length - 1;
     while (i >= 3) {
         // TODO: optimize
         // TODO: test with updating only needed cells
-        imagedata.data[i] = Math.min(255, Math.max(0, imagedata.data[i] + alphaChange));
+        img.data[i] = Math.min(255, Math.max(0, img.data[i] + alphaChange));
         i -= 4;
     }
 
-    return imagedata;
+    return img;
 }
 function forText<T>(func: () => T, options: FontOptions = config.fontOptions) {
 
@@ -134,11 +139,11 @@ function forText<T>(func: () => T, options: FontOptions = config.fontOptions) {
     renderer2DCtx.font = options.fontStr;
     renderer2DCtx.fillStyle = options.color.toHexString(true);
 
-    const r = func();
+    const result = func();
 
     renderer2DCtx.restore();
 
-    return r;
+    return result;
 }
 function printText(text: string, area: Omit<RelativeArea, "size"> & Partial<Pick<RelativeArea, "size">>, fontOptions: FontOptions = config.fontOptions) {
     forText(
@@ -169,19 +174,20 @@ function drawDrop(drops: number[], i: number) {
 }
 function drawMatrix(time: number) {
 
-    const timeD: number | undefined = prevFrameTime != null
+    const timeD: number | null = prevFrameTime != null
         ? (time - prevFrameTime)
-        : undefined;
+        : null;
 
-    // TODO: benchmark undefined === undefined vs !value
-    if (timeD === undefined || timeD >= config.fpsDelta_ms) {
+    if (timeD == null || timeD >= config.fpsDelta_ms) {
         // if (timeD == null || timeD >= config.getFpsDelta_ms()) {
 
         let needsClear: boolean = false;
         needsClear = refreshMatrixValues() || needsClear;
         needsClear = refreshDropsListSize() || needsClear;
 
-        if (needsClear) clearCanvas();
+        if (needsClear) {
+            clearCanvas();
+        }
 
         if (updateDrops(timeD)) {
             // TODO: cache value
@@ -201,12 +207,11 @@ function updateDropPosition(drops: number[], i: number, step: number): boolean {
 
     let dropY = drops[i];
 
-    if (dropY < 0 && Math.random() <= 0.975)
+    if (dropY < 0 && Math.random() <= 0.98)
         return false;
 
     dropY += step;
 
-    // TODO: verificare valori Math.floor/ceil
     if (dropY * config.fontOptions.lineHeight_px >= renderer2DCtx.canvas.height)
         dropY = -1; // TODO: check === -1 vs === NaN
 
@@ -214,7 +219,7 @@ function updateDropPosition(drops: number[], i: number, step: number): boolean {
 
     return true;
 }
-function updateDrops(timeD?: number): boolean {
+function updateDrops(timeD: number | null): boolean {
     // (1s) 1000 : config.cps = timeD : x
     dropsStep += timeD != null ? config.cps * timeD / 1000 : 0;
     const dsIntPart: number = Math.floor(dropsStep);
@@ -226,10 +231,6 @@ function updateDrops(timeD?: number): boolean {
     let di = drops.length;
     while (--di >= 0) {
         anyChanges = updateDropPosition(drops, di, dropsStep) || anyChanges;
-        // TODO: bench if + set vs x = () || x
-        // if (updateDropPosition(drops, di, dropsStep)) {
-        //     anyDropChangedPosition = true;
-        // }
     }
 
     dropsStep -= dsIntPart;
@@ -238,25 +239,32 @@ function updateDrops(timeD?: number): boolean {
 }
 function drawDrops() {
     let n = drops.length;
-    while (--n >= 0)
+    while (--n >= 0) {
         drawDrop(drops, n);
+    }
 }
 function printConfig() {
     forText(() => {
 
-        const text = renderer2DCtx.font + ", cols: " + columnsCount + ", spacing: " + columnsSpacing;
-        const textSize = renderer2DCtx.measureText(text);
-        const margin = 10;
+        const text =
+            `bg: ${config.backgroundColor.toHexString(true)}` +
+            `, font: ${config.fontOptions.lineHeight_px} px ${renderer2DCtx.font} ${config.fontOptions.color.toHexString(true)}` +
+            `, cols: ${columnsCount}` +
+            `, spacing: ${columnsSpacing}`;
         const padding = 4;
+        const doublePadding = padding * 2;
+        const textSize = renderer2DCtx.measureText(text);
+        const marginX = Math.floor((renderer2DCtx.canvas.width - textSize.width - doublePadding) / 2);
+        const marginY = Math.floor((renderer2DCtx.canvas.height - config.fontOptions.lineHeight_px - doublePadding) / 2);
 
         renderer2DCtx.save();
 
-        renderer2DCtx.fillStyle = Colors_RGB.black.toHexString();
-        renderer2DCtx.fillRect(margin, margin, textSize.width + padding * 2, config.fontOptions.lineHeight_px + padding * 2);
+        renderer2DCtx.fillStyle = Colors.RGB.black.toHexString(true);
+        renderer2DCtx.fillRect(marginX, marginY, textSize.width + doublePadding, config.fontOptions.lineHeight_px + doublePadding);
 
         renderer2DCtx.restore();
 
-        printText(text, { pos: { x: margin + padding, y: margin + padding } });
+        printText(text, { pos: { x: marginX + padding, y: marginY + padding } });
     });
 }
 function getRainbowColorChannel(hueCoeff: number, channelMask: number) {
@@ -312,7 +320,6 @@ function getDropFontColor() {
 
 //     stopDrawingLoop();
 
-//     // TODO: good sanitization?
 //     if (ms > 0 && config.stepsInterval !== ms) {
 //         // alert("Setting drawing interval: " + ms);
 //         config.stepsInterval = ms;
@@ -320,14 +327,6 @@ function getDropFontColor() {
 
 //     restartDrawingLoop();
 // }
-function calculateColumnsSpacing() {
-    return (renderer2DCtx.canvas.width % config.fontOptions.lineHeight_px) / (columnsCount - 1);
-}
-function refreshCanvas(): boolean {
-    let hasChanges: boolean = refreshCanvasSize();
-    rendering.style.backgroundColor = config.backgroundColor.toHexString();
-    return hasChanges;
-}
 function refreshCanvasSize() {
 
     let hasChanges: boolean = false;
@@ -343,6 +342,14 @@ function refreshCanvasSize() {
     hasChanges = refreshMatrixValues() || hasChanges;
 
     return hasChanges;
+}
+function refreshCanvas(): boolean {
+    let hasChanges: boolean = refreshCanvasSize();
+    rendering.style.backgroundColor = config.backgroundColor.toHexString(true);
+    return hasChanges;
+}
+function calculateColumnsSpacing() {
+    return (renderer2DCtx.canvas.width % config.fontOptions.lineHeight_px) / (columnsCount - 1);
 }
 function refreshMatrixValues() {
 
@@ -360,6 +367,13 @@ function refreshMatrixValues() {
     }
     return hasChanges;
 }
+function createDropsList() {
+    const drops = new Array<number>(columnsCount);
+    for (let i = 0; i < columnsCount; i++) {
+        drops[i] = Math.ceil((renderer2DCtx.canvas.height / config.fontOptions.lineHeight_px) * Math.random());
+    }
+    return drops;
+}
 // TODO: make it only change width by trimming or adding missing columns, dont regenerate the array or the drops
 function refreshDropsListSize() {
 
@@ -372,17 +386,8 @@ function refreshDropsListSize() {
 }
 function refreshAll() {
     let hasChanges: boolean = false;
-
     hasChanges = refreshCanvas() || hasChanges;
-
     return hasChanges;
-}
-function createDropsList() {
-    const drops = new Array<number>(columnsCount);
-    for (let i = 0; i < columnsCount; i++) {
-        drops[i] = Math.ceil((renderer2DCtx.canvas.height / config.fontOptions.lineHeight_px) * Math.random());
-    }
-    return drops;
 }
 // function stopDrawingLoop() {
 //     console.log("Stopping handle: " + updaterHandle);
@@ -448,7 +453,10 @@ let updaterHandle: number | undefined = undefined;
 let prevFrameTime: number | undefined = undefined;
 
 const USE_OFFSCREEN = true;
-const renderingSettings_2D: CanvasRenderingContext2DSettings = { alpha: true };
+const renderingSettings_2D: CanvasRenderingContext2DSettings = {
+    alpha: true,
+    // willReadFrequently: true,
+};
 
 const rendering: HTMLCanvasElement = document.createElement("canvas");
 document.body.appendChild(rendering);
@@ -457,7 +465,7 @@ if (!rendering) throw new Error("Unable to create canvas");
 const renderer_2D = rendering.transferControlToOffscreen();
 
 const tempRenderer_2DCtx = USE_OFFSCREEN
-    ? renderer_2D.getContext("2d", renderingSettings_2D)
+    ? renderer_2D.getContext("2d", renderingSettings_2D) as OffscreenCanvasRenderingContext2D
     : rendering.getContext("2d", renderingSettings_2D);
 
 if (!tempRenderer_2DCtx) throw new Error("Unable to obtain canvas 2D context");
@@ -480,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('resize', () => {
     // stopDrawingLoop();
-    stopAnimation();
+    // stopAnimation();
     restartAnimation("canvas");
     // restartDrawingLoop();
 });

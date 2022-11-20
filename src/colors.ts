@@ -1,25 +1,48 @@
-export abstract class Color {
-
-    public abstract toHexString(showSharp: boolean): string;
+interface IColor {
+    toHexString(showSharp: boolean): string;
 }
 
-export class Color_RGB extends Color {
+class Color_RGB implements IColor {
+    public static readonly ExtendedFormat = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
+    public static readonly CompressedFormat = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
 
     constructor(
         public readonly R: number,
         public readonly G: number,
         public readonly B: number) {
-        super();
     }
 
-    public toHexString(showSharp: boolean = true): string {
+    public toHexString(showSharp: boolean): string {
         return `${showSharp ? '#' : ''}${numberToHex(this.R)}${numberToHex(this.G)}${numberToHex(this.B)}`;
     }
 
-    // public toArgb(a: number): Color_ARGB { return new Color_ARGB(a, this.R, this.G, this.B); }
-};
 
-export class Color_RGBA extends Color_RGB {
+    public static isValidString(hex: string): boolean {
+        return this.ExtendedFormat.test(hex) || this.CompressedFormat.test(hex);
+    }
+
+    public static parse(hex: string): Color_RGB | never {
+        if (hex == null)
+            throw new Error('Color code not defined.');
+
+        const colorValues = this.ExtendedFormat.exec(hex) ?? this.CompressedFormat.exec(hex);
+        if (colorValues == null)
+            throw new Error('"' + hex + '" is not a valid RGBA code.');
+
+        const r = colorValues[1];
+        const g = colorValues[2];
+        const b = colorValues[3];
+        return new Color_RGB(
+            parseInt(r.padEnd(2, r), 16),
+            parseInt(g.padEnd(2, g), 16),
+            parseInt(b.padEnd(2, b), 16));
+    }
+}
+
+class Color_RGBA extends Color_RGB implements IColor {
+    public static readonly ExtendedFormat = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
+    public static readonly CompressedFormat = /^#?([a-f\d])([a-f\d])([a-f\d])([a-f\d])$/i;
+
     constructor(
         R: number,
         G: number,
@@ -28,73 +51,73 @@ export class Color_RGBA extends Color_RGB {
         super(R, G, B);
     }
 
-    public toHexString(showSharp: boolean = true): string {
+    public override toHexString(showSharp: boolean): string {
         return super.toHexString(showSharp) + numberToHex(this.A);
     }
 
-    // public toRgb(): Color_RGB { return new Color_RGB(this.R, this.G, this.B); }
-}
-
-export class ColorString {
-
-    private constructor() { }
-
-    public static parseRgb(hex: string): Color_RGB | null {
-        // TODO: all 1 or 2
-        const rgbValues = /^#?([a-f\d]{1,2})([a-f\d]{1,2})([a-f\d]{1,2})$/i.exec(hex);
-        return (!rgbValues)
-            ? null
-            : new Color_RGB(parseInt(rgbValues[1], 16), parseInt(rgbValues[2], 16), parseInt(rgbValues[3], 16));
+    public static isValidString(hex: string): boolean {
+        return this.ExtendedFormat.test(hex) || this.CompressedFormat.test(hex);
     }
 
-    public static parseRgba(hex: string): Color_RGBA | null {
-        // TODO: all 1 or 2
-        const rgbValues = /^#?([a-f\d]{1,2})([a-f\d]{1,2})([a-f\d]{1,2})([a-f\d]{1,2})$/i.exec(hex);
-        return (!rgbValues)
-            ? null
-            : new Color_RGBA(parseInt(rgbValues[1], 16), parseInt(rgbValues[2], 16), parseInt(rgbValues[3], 16), parseInt(rgbValues[4], 16));
-    }
+    public static parse(hex: string): Color_RGBA | never {
+        if (hex == null)
+            throw new Error('Color code not defined.');
 
-    public static parse(hex: string): Color_RGB | Color_RGBA | null {
-        if (!hex)
-            return null;
+        const colorValues = this.ExtendedFormat.exec(hex) ?? this.CompressedFormat.exec(hex);
+        if (colorValues == null)
+            throw new Error('"' + hex + '" is not a valid RGBA code.');
 
-        if (hex.startsWith('#'))
-            hex = hex.substr(1);
-
-        switch (hex.length) {
-            case 3:
-            case 6:
-                return this.parseRgb(hex);
-
-            case 4:
-            case 8:
-                return this.parseRgba(hex);
-
-            default:
-                throw new Error("hex color format not recognized");
-        }
+        const r = colorValues[1];
+        const g = colorValues[2];
+        const b = colorValues[3];
+        const a = colorValues[4];
+        return new Color_RGBA(
+            parseInt(r.padEnd(2, r), 16),
+            parseInt(g.padEnd(2, g), 16),
+            parseInt(b.padEnd(2, b), 16),
+            parseInt(a.padEnd(2, a), 16));
     }
 }
 
-export class Colors_RGB {
+function parseHexColorString(hex: string): Color_RGB | Color_RGBA {
+    if (hex == null)
+        throw new Error('Cannot parse color string: no color string provided.');
 
-    private constructor() { }
+    if (hex.length <= 0)
+        throw new Error('Empty string is not a valid color string.');
 
-    public static readonly black: Color_RGB = new Color_RGB(0, 0, 0);
-    public static readonly white: Color_RGB = new Color_RGB(255, 255, 255);
-    public static readonly red: Color_RGB = new Color_RGB(255, 0, 0);
-    public static readonly theMatrixGreen: Color_RGB = new Color_RGB(52, 253, 125);
+    if (hex.startsWith('#'))
+        hex = hex.substr(1);
+
+    switch (hex.length) {
+        case 3:
+        case 6:
+            return Color_RGB.parse(hex);
+
+        case 4:
+        case 8:
+            return Color_RGBA.parse(hex);
+
+        default:
+            throw new Error("Hex color string format not recognized.");
+    }
 }
 
-export class Colors_RGBA {
+abstract class Colors {
 
-    private constructor() { }
+    public static readonly RGB = class {
+        public static readonly black: Color_RGB = new Color_RGB(0, 0, 0);
+        public static readonly white: Color_RGB = new Color_RGB(255, 255, 255);
+        public static readonly red: Color_RGB = new Color_RGB(255, 0, 0);
+        public static readonly theMatrixGreen: Color_RGB = new Color_RGB(52, 253, 125);
+    }
 
-    public static readonly black: Color_RGBA = new Color_RGBA(0, 0, 0, 255);
-    public static readonly white: Color_RGBA = new Color_RGBA(255, 255, 255, 255);
-    public static readonly red: Color_RGBA = new Color_RGBA(255, 0, 0, 255);
-    public static readonly theMatrixGreen: Color_RGBA = new Color_RGBA(52, 253, 125, 255);
+    public static readonly RGBA = class {
+        public static readonly black: Color_RGBA = new Color_RGBA(0, 0, 0, 255);
+        public static readonly white: Color_RGBA = new Color_RGBA(255, 255, 255, 255);
+        public static readonly red: Color_RGBA = new Color_RGBA(255, 0, 0, 255);
+        public static readonly theMatrixGreen: Color_RGBA = new Color_RGBA(52, 253, 125, 255);
+    }
 }
 // TODO: colors hex from props
 
@@ -114,19 +137,26 @@ export class Colors_RGBA {
 //     parseInt(rgbValues[i], 16));
 // }
 
-export function numberToHex(value: number) {
+function numberToHex(value: number) {
     const hex = value.toString(16);
     return hex.length === 1 ? "0" + hex : hex;
 }
 
-export function rgbaToHex(r: number, g: number, b: number, a: number): string {
+function rgbaToHex(r: number, g: number, b: number, a: number): string {
     return `#${a ? numberToHex(a) : ""}${numberToHex(r)}${numberToHex(g)}${numberToHex(b)}`;
 }
 
-export function rgbToHex(r: number, g: number, b: number): string {
+function rgbToHex(r: number, g: number, b: number): string {
     return `#${numberToHex(r)}${numberToHex(g)}${numberToHex(b)}`;
 }
 
 // function colorToHex(color: Color_RGB, printAlpha: boolean = false): string {
 //   return `#${printAlpha ? numberToHex(color.A) : ""}${numberToHex(color.R)}${numberToHex(color.G)}${numberToHex(color.B)}`;
 // }
+
+function rgbToRgba(rgbColor: Color_RGB, alpha: number = 255): Color_RGBA {
+    return new Color_RGBA(rgbColor.R, rgbColor.G, rgbColor.B, alpha);
+}
+function rgbaToRgb(rgbaColor: Color_RGBA): Color_RGB {
+    return new Color_RGB(rgbaColor.R, rgbaColor.G, rgbaColor.B);
+}
