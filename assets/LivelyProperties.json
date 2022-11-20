@@ -7,7 +7,7 @@
   "fontColor": {
     "text": "Font Color",
     "type": "color",
-    "value": "#FFF0F0"
+    "value": "#B4AAFF"
   },
   "fontFamily": {
     "type": "dropdown",
@@ -19,7 +19,7 @@
       "Consolas",
       "Monaco"
     ],
-    "text": "Font"
+    "text": "Font Family"
   },
   "fontLineHeight_px": {
     "type": "slider",
@@ -34,7 +34,7 @@
     "value": 60,
     "min": 8,
     "max": 60,
-    "text": "FPS",
+    "text": "FPS (frame/second)",
     "tick": 1
   },
   "cps": {
@@ -42,12 +42,12 @@
     "value": 12,
     "min": 1,
     "max": 50,
-    "text": "CPS",
+    "text": "CPS (cell/second)",
     "tick": 1
   },
   "trailLength": {
     "type": "slider",
-    "value": 32,
+    "value": 56,
     "min": 3,
     "max": 120,
     "text": "Trail length",

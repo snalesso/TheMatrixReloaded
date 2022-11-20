@@ -1,12 +1,12 @@
 {
   "AppVersion": "1.0.0.0",
-  "Title": "Matrix Charsfall",
+  "Title": "The Matrix Reloaded",
   "Thumbnail": "thumbnail.jpg",
   "Preview": "preview.gif",
   "Desc": "Falling chracters animation inspired by Matrix.",
   "Author": "snalesso",
   "License": "",
-  "Contact": "https://github.com/snalesso/lively_matrix_reloaded",
+  "Contact": "https://github.com/snalesso/TheMatrixReloaded",
   "Type": 1,
   "FileName": "index.html"
 }
