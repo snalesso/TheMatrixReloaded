@@ -1,19 +1,22 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const HtmlMinimizerPlugin = require("html-minimizer-webpack-plugin");
-// const CopyPlugin = require("copy-webpack-plugin");
+const TerserPlugin = require('terser-webpack-plugin');
+const CopyPlugin = require("copy-webpack-plugin");
 
-const path = require('path');
+const utils = require('./webpack.config.utils');
 
 module.exports = {
-    context: path.resolve(__dirname, 'src'),
+    context: utils.getPath('src'),
     mode: "production",
     entry: {
         index: './index.ts'
     },
     output: {
+        iife: false,
         clean: true,
-        path: path.resolve(__dirname, 'dist'),
-        filename: '[name].[contenthash].bundle.js',
+        path: utils.getPath('dist'),
+        // filename: '[name].[contenthash].bundle.js',
+        filename: 'index.js',
     },
     module: {
         rules: [
@@ -21,35 +24,19 @@ module.exports = {
                 test: /\.tsx?$/,
                 use: 'ts-loader'
             },
-            // {
-            //     test: /\.html$/,
-            //     type: 'asset/resource',
-            //     generator: {
-            //         filename: '[name][ext]',
-            //     },
-            // },
-            // {
-            //     test: /\.html$/i,
-            //     use: ['extract-loader', 'html-loader'],
-            // },
         ],
     },
     resolve: {
-        extensions: ['.ts', '.tsx', '.js'],
+        extensions: ['.ts', '.js'],
     },
     plugins: [
-        // new CopyPlugin({
-        //     patterns: [
-        //         {
-        //             context: path.resolve(__dirname, "src"),
-        //             from: "./**/*.html",
-        //         },
-        //         // {
-        //         //     context: path.resolve(__dirname, "src"),
-        //         //     from: "**/*.js",
-        //         // },
-        //     ],
-        // }),
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: '../assets', to: '../dist'
+                },
+            ],
+        }),
         new HtmlWebpackPlugin({
             title: "Webpack Test",
             template: "index.html",
@@ -62,47 +49,49 @@ module.exports = {
                 title: "The Matrix reloaded"
             },
             minify: {
-                removeComments: true,
-                collapseWhitespace: true,
-                removeRedundantAttributes: true,
                 useShortDoctype: true,
+                collapseWhitespace: true,
+                removeScriptTypeAttributes: true,
+                html5: true,
+                preserveLineBreaks: true,
                 removeEmptyAttributes: true,
+                removeRedundantAttributes: true,
                 removeStyleLinkTypeAttributes: true,
                 keepClosingSlash: true,
+                removeComments: true,
                 minifyJS: true,
                 minifyCSS: true,
                 minifyURLs: true,
             },
-        })
+        }),
+        new TerserPlugin({
+            terserOptions: {
+                compress: {
+                    keep_classnames: false,
+                    keep_fargs: false,
+                    keep_fnames: /^livelyPropertyListener$/,
+                    reduce_funcs: true
+                }
+            }
+        }),
     ],
-    // optimization: {
-    //     minimize: true,
-    //     minimizer: [
-    //         // For webpack@5 you can use the `...` syntax to extend existing minimizers (i.e. `terser-webpack-plugin`), uncomment the next line
-    //         `...`,
-    //         new HtmlMinimizerPlugin({
-    //             // test: /\.html(\?.*)?$/i,
-    //             minimizerOptions: {
-    //                 caseSensitive: true,
-    //                 collapseWhitespace: true,
-    //                 conservativeCollapse: true,
-    //                 keepClosingSlash: true,
-    //                 minifyCSS: true,
-    //                 minifyJS: true,
-    //                 removeComments: true,
-    //                 removeScriptTypeAttributes: true,
-    //                 removeStyleLinkTypeAttributes: true,
-    //             },
-    //             minify: (data, minimizerOptions) => {
-    //                 const htmlMinifier = require("html-minifier-terser");
-    //                 const [[filename, input]] = Object.entries(data);
-
-    //                 return htmlMinifier.minify(input, minimizerOptions);
-    //             }
-    //         }),
-    //     ],
-    // },
+    optimization: {
+        minimize: true,
+        minimizer: [
+            '...',
+            new TerserPlugin({
+                terserOptions: {
+                    compress: {
+                        keep_classnames: false,
+                        keep_fargs: false,
+                        keep_fnames: false,
+                        reduce_funcs: true
+                    }
+                }
+            })
+        ],
+    },
     devServer: {
         contentBase: './dist',
     },
-};
+}
